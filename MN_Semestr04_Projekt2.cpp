@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <cassert>
 #include <algorithm>
+#include <string>
 
 class Matrix
 {
@@ -25,7 +26,7 @@ public:
 
 	double& operator[](int pos)
 	{
-		return data[(pos-1)];
+		return data[(pos - 1)];
 	}
 
 	const double& operator[](int pos) const
@@ -262,7 +263,7 @@ Matrix rozwiaz_uklad(Matrix a, Matrix y)
 	Matrix& l = d.first;
 	Matrix& u = d.second;
 	Matrix z(rozmiar(y), 1);
-	
+
 
 	// l * z = y
 	for(int i = 1; i <= l.wiersze(); ++i)
@@ -270,7 +271,7 @@ Matrix rozwiaz_uklad(Matrix a, Matrix y)
 		double suma = y[i];
 		for(int j = 1; j <= i - 1; ++j)
 			suma -= l(i, j)*z[j];
-		z[i] = suma / l(i,i);
+		z[i] = suma / l(i, i);
 	}
 
 	Matrix x(rozmiar(y), 1);
@@ -456,7 +457,7 @@ void testy(int op)
 		const int w = 2;
 		const int e = 3;
 		const int r = 4;
-		
+
 		const double d = 0.85;
 		Matrix B(4, 4);
 		// Za³ó¿my przyk³adowo, ¿e ca³a sieæ sk³ada siê z czterech stron o nazwach q, w, e i r.Niech strona
@@ -479,6 +480,8 @@ struct GraphReader
 	std::istream& f;
 	bool operator()(std::pair<int, int>& edge)
 	{
+		while(f.peek() == '#')
+			f.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 		f >> edge.first;
 		if(f.eof())
 			return false;
@@ -493,36 +496,93 @@ struct GraphReader
 	explicit GraphReader(std::istream& i) : f(i) {}
 };
 
-
-int main()
+int najwiekszy_wierzcholek_w_pliku_z_grafem(std::istream& f)
 {
-	//testy(6);
-	const char* path = "simple_graph.txt";
-	std::cout << "Przegladanie pliku\n";
 	int max_vertex = -1;
+	GraphReader r(f);
+
+	std::pair<int, int> edge;
+	while(r(edge))
 	{
-		std::ifstream f(path);
-		GraphReader r(f);
-		
-		std::pair<int, int> edge;
-		while(r(edge))
-		{
-			max_vertex = std::max(max_vertex, edge.first);
-			max_vertex = std::max(max_vertex, edge.second);
-		}
+		max_vertex = std::max(max_vertex, edge.first);
+		max_vertex = std::max(max_vertex, edge.second);
 	}
-	std::cout << "Przejrzano plik, wierzcholek o najwiekszym numerze = " << max_vertex << "\n";
-	Matrix m(max_vertex, max_vertex);
+	return max_vertex;
+}
 
+template<typename T>
+void wczytaj_i_oblicz_page_rank(T f)
+{
+	std::string path;
+	std::cin.clear();
+	std::cin.ignore(256, '\n');
+	std::cout << "Podaj sciezke do pliku\n";
+	std::getline(std::cin, path);
+	int max_vertex;
 	{
-		std::ifstream f(path);
-		GraphReader r(f);
+		std::ifstream plik(path);
+		max_vertex = najwiekszy_wierzcholek_w_pliku_z_grafem(plik);
+	}
+	Matrix m(max_vertex, max_vertex);
+	{
+		std::ifstream plik(path);
+		GraphReader r(plik);
 
 		std::pair<int, int> edge;
 		while(r(edge))
 		{
-			m(edge.second, edge.first) = 1;
+			f(edge, m);
 		}
 	}
 	wypisz_macierz(page_rank(m, 0.85));
+}
+
+int main()
+{
+	std::cout
+		<< "1. Obliczanie ukladow rownan\n"
+		<< "2. Obliczanie PageRank dla grafow skierowanych\n"
+		<< "3. Obliczanie PageRank dla grafow nieskierowanych\n";
+	int select;
+	std::cin >> select;
+	if(select == 1)
+	{
+		int ilosc_rownan;
+		std::cout << "Podaj ilosc rownan\n";
+		std::cin >> ilosc_rownan;
+		std::cout << "Uklad rownan A*x = y, wyznaczanie x.\n";
+		std::cout << "Podaj wspolczynniki dla macierzy:\n";
+		std::cout
+			<< "( na przyklad (dla ilosci rownan 3):\n"
+			<< " 1 2 3\n"
+			<< " 4 5 6\n"
+			<< " 7 8 9 )\n\n";
+		Matrix m(ilosc_rownan, ilosc_rownan);
+		Matrix y(ilosc_rownan, 1);
+		for(int i = 1; i <= ilosc_rownan; ++i)
+			for(int j = 1; j <= ilosc_rownan; ++j)
+				std::cin >> m(i, j);
+		std::cout << "Podaj y:\n";
+		for(int i = 1; i <= ilosc_rownan; ++i)
+			std::cin >> y[i];
+
+		std::cout << "Obliczone x:\n";
+		wypisz_macierz(rozwiaz_uklad(m, y));
+	}
+	else if(select == 2)
+	{
+		wczytaj_i_oblicz_page_rank([](std::pair<int, int> edge, Matrix& m)
+		{
+			m(edge.second, edge.first) = 1;
+		});
+	}
+	else if(select == 3)
+	{
+		wczytaj_i_oblicz_page_rank([](std::pair<int, int> edge, Matrix& m)
+		{
+			m(edge.second, edge.first) = 1;
+			m(edge.first, edge.second) = 1;
+		});
+	}
+	std::cin.get();
 }
