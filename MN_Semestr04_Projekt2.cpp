@@ -74,6 +74,7 @@ Matrix& operator*=(Matrix& lhs, double x)
 	for(int i = 1; i <= lhs.wiersze(); ++i)
 		for(int j = 1; j <= lhs.kolumny(); ++j)
 			lhs(i, j) *= x;
+	return lhs;
 }
 
 Matrix operator*(Matrix m, double x)
@@ -272,9 +273,45 @@ Matrix rozwiaz_uklad(Matrix a, Matrix y)
 	return x;
 }
 
-int main()
+Matrix page_rank(Matrix B, const double d)
 {
-	const int op = 6;
+	assert(B.wiersze() == B.kolumny());
+	const int n = 4;
+	Matrix A(n, n);
+	Matrix W(n, 1);
+	for(int i = 1; i <= n; ++i)
+	{
+		int ilosc_linkow = 0;
+		for(int j = 1; j <= n; ++j)
+		{
+			ilosc_linkow += B(j, i) ? 1 : 0;
+		}
+		if(ilosc_linkow == 0)
+		{
+			for(int j = 1; j <= n; ++j)
+			{
+				if(j == i)
+					continue;
+				else
+					B(j, i) = 1;
+			}
+			ilosc_linkow = n - 1;
+		}
+		A(i, i) = 1.0 / ilosc_linkow;
+	}
+
+	for(int i = 1; i <= n; ++i)
+	{
+		W[i] = (1 - d) / n;
+	}
+
+	Matrix L = macierz_jednostkowa(n);
+	L -= d*mnozenie_prawa_diagonalna(B, A);
+	return rozwiaz_uklad(L, W);
+}
+
+void testy(const int op)
+{
 	if(op == 0)
 	{
 		Matrix m(3, 2);
@@ -395,6 +432,29 @@ int main()
 	}
 	else if(op == 6)
 	{
+		const int q = 1;
+		const int w = 2;
+		const int e = 3;
+		const int r = 4;
 		
+		const double d = 0.85;
+		Matrix B(4, 4);
+		// Za³ó¿my przyk³adowo, ¿e ca³a sieæ sk³ada siê z czterech stron o nazwach q, w, e i r.Niech strona
+		// w ma link do strony q i strony e, strona e ma link do strony q, i strona r posiada linki do stron
+		// q, w i e
+		B(q, w) = 1;
+		B(e, w) = 1;
+		B(q, e) = 1;
+		B(q, r) = 1;
+		B(w, r) = 1;
+		B(e, r) = 1;
+
+		auto R = page_rank(B, d);
+		wypisz_macierz(R);
 	}
+}
+
+int main()
+{
+	testy(6);
 }
