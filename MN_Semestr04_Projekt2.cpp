@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cassert>
+#include <algorithm>
 
 class Matrix
 {
@@ -40,6 +41,58 @@ public:
 	int kolumny() const { return width; }
 };
 
+Matrix& operator+=(Matrix& lhs, const Matrix& rhs)
+{
+	assert(lhs.wiersze() == rhs.wiersze());
+	assert(lhs.kolumny() == rhs.kolumny());
+
+	for(int i = 1; i <= lhs.wiersze(); ++i)
+		for(int j = 1; j <= lhs.kolumny(); ++j)
+			lhs(i, j) += rhs(i, j);
+	return lhs;
+}
+
+Matrix operator+(Matrix lhs, const Matrix& rhs)
+{
+	lhs += rhs;
+	return lhs;
+}
+
+Matrix& operator-=(Matrix& lhs, const Matrix& rhs)
+{
+	assert(lhs.wiersze() == rhs.wiersze());
+	assert(lhs.kolumny() == rhs.kolumny());
+
+	for(int i = 1; i <= lhs.wiersze(); ++i)
+		for(int j = 1; j <= lhs.kolumny(); ++j)
+			lhs(i, j) -= rhs(i, j);
+	return lhs;
+}
+
+Matrix operator-(Matrix lhs, const Matrix& rhs)
+{
+	lhs -= rhs;
+	return lhs;
+}
+
+int rozmiar(const Matrix& m)
+{
+	return m.wiersze() * m.kolumny();
+}
+
+Matrix macierz_skalarna(int n, double skalar)
+{
+	Matrix m(n, n);
+	for(int i = 1; i <= n; ++i)
+		m(i, i) = skalar;
+	return m;
+}
+
+Matrix macierz_jednostkowa(int n)
+{
+	return macierz_skalarna(n, 1);
+}
+
 void swap_columns(Matrix& m, int a, int b)
 {
 	for(int i = 1; i <= m.wiersze(); ++i)
@@ -50,6 +103,32 @@ void swap_rows(Matrix& m, int a, int b)
 {
 	for(int i = 1; i <= m.kolumny(); ++i)
 		std::swap(m(a, i), m(b, i));
+}
+
+bool jest_diagonalna(const Matrix& m)
+{
+	for(int i = 1; i <= m.kolumny(); ++i)
+		for(int j = 1; j <= m.wiersze(); ++j)
+		{
+			if(i == j)
+				continue;
+			if(m(i, j) != 0)
+				return false;
+		}
+	return true;
+}
+
+// mno¿enie dwóch macierzy przy za³o¿eniu ¿e prawa jest diagonalna
+Matrix matrix_multiplication_right_diagonal(Matrix x, const Matrix& b)
+{
+	assert(x.kolumny() == b.wiersze());
+	assert(jest_diagonalna(b));
+	//  amounts to multiplying the i-th column of A by ai.
+	int n = std::min(b.wiersze(), b.kolumny());
+	for(int i = 1; i <= n; ++i)
+		for(int j = 1; j <= x.wiersze(); ++j)
+			x(j, i) *= b(i, i);
+	return x;
 }
 
 void wypisz_macierz(const Matrix& m)
@@ -67,6 +146,15 @@ void wypisz_macierz(const Matrix& m)
 std::pair<Matrix, Matrix> dekompozycja_lu(const Matrix& a)
 {
 	assert(a.wiersze() == a.kolumny());
+	assert([&]()
+	{
+		for(int i = 1; i <= a.wiersze(); ++i)
+		{
+			if(a(i, i) == 0)
+				return false;
+		}
+		return true;
+	}());
 	int n = a.wiersze();
 	std::pair<Matrix, Matrix> ret(Matrix(n, n), Matrix(n, n));
 	Matrix& l = ret.first;
@@ -105,7 +193,7 @@ std::pair<Matrix, Matrix> dekompozycja_lu(const Matrix& a)
 // i obliczaniem uk³adu równañ
 Matrix fix_matrices(Matrix& a, Matrix& y)
 {
-	Matrix pozycje(y.wiersze(), 1);
+	Matrix pozycje(rozmiar(y), 1);
 	for(int i = 1; i <= y.wiersze(); ++i)
 		pozycje[i] = i;
 
@@ -126,11 +214,15 @@ Matrix fix_matrices(Matrix& a, Matrix& y)
 
 Matrix rozwiaz_uklad(Matrix a, Matrix y)
 {
+	assert(a.wiersze() == a.kolumny());
+	assert(a.wiersze() == y.wiersze());
+	assert(y.kolumny() == 1);
+	auto pozycje = fix_matrices(a, y);
 	auto d = dekompozycja_lu(a);
 	Matrix& l = d.first;
 	Matrix& u = d.second;
-	Matrix z(l.kolumny(), 1);
-	Matrix x(l.kolumny(), 1);
+	Matrix z(rozmiar(y), 1);
+	
 
 	// l * z = y
 	for(int i = 1; i <= l.wiersze(); ++i)
@@ -141,6 +233,7 @@ Matrix rozwiaz_uklad(Matrix a, Matrix y)
 		z[i] = suma / l(i,i);
 	}
 
+	Matrix x(rozmiar(y), 1);
 	// u * x = z
 	for(int i = l.wiersze(); i >= 1; --i)
 	{
@@ -150,12 +243,17 @@ Matrix rozwiaz_uklad(Matrix a, Matrix y)
 		x[i] = suma / u(i, i);
 	}
 
+	Matrix fixed_x(rozmiar(y), 1);
+	for(int i = 1; i <= rozmiar(fixed_x); ++i)
+	{
+		fixed_x[pozycje[i]] = x[i];
+	}
 	return x;
 }
 
 int main()
 {
-	const int op = 4;
+	const int op = 6;
 	if(op == 0)
 	{
 		Matrix m(3, 2);
@@ -203,6 +301,9 @@ int main()
 		y[3] = -2;
 
 		auto x = rozwiaz_uklad(m, y);
+		wypisz_macierz(m);
+		wypisz_macierz(y);
+		wypisz_macierz(x);
 	}
 	else if(op == 3)
 	{
@@ -243,5 +344,36 @@ int main()
 		wypisz_macierz(m);
 		wypisz_macierz(y);
 		wypisz_macierz(poz);
+	}
+	else if(op == 5)
+	{
+		Matrix m(3, 3);
+		m(1, 1) = 0;
+		m(1, 2) = 0;
+		m(1, 3) = 2;
+		m(2, 1) = 7;
+		m(2, 2) = 0;
+		m(2, 3) = 0;
+		m(3, 1) = 0;
+		m(3, 2) = 4;
+		m(3, 3) = 0;
+
+		Matrix n(3, 3);
+		n(1, 1) = 1;
+		n(1, 2) = 0;
+		n(1, 3) = 0;
+		n(2, 1) = 0;
+		n(2, 2) = 4;
+		n(2, 3) = 0;
+		n(3, 1) = 0;
+		n(3, 2) = 0;
+		n(3, 3) = -1;
+
+		std::cout << jest_diagonalna(m) << "\n";
+		std::cout << jest_diagonalna(n) << "\n";
+	}
+	else if(op == 6)
+	{
+		
 	}
 }
