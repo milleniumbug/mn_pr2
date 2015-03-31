@@ -1,5 +1,6 @@
 #include <vector>
 #include <utility>
+#include <fstream>
 #include <iostream>
 #include <iomanip>
 #include <cassert>
@@ -7,7 +8,8 @@
 
 class Matrix
 {
-	std::vector<double> data;
+	typedef std::vector<double> underlying_container;
+	underlying_container data;
 	int width;
 
 public:
@@ -46,8 +48,8 @@ Matrix& operator+=(Matrix& lhs, const Matrix& rhs)
 	assert(lhs.wiersze() == rhs.wiersze());
 	assert(lhs.kolumny() == rhs.kolumny());
 
-	for(int i = 1; i <= lhs.wiersze(); ++i)
-		for(int j = 1; j <= lhs.kolumny(); ++j)
+	for(int i = 1; i <= lhs.kolumny(); ++i)
+		for(int j = 1; j <= lhs.wiersze(); ++j)
 			lhs(i, j) += rhs(i, j);
 	return lhs;
 }
@@ -63,16 +65,22 @@ Matrix& operator-=(Matrix& lhs, const Matrix& rhs)
 	assert(lhs.wiersze() == rhs.wiersze());
 	assert(lhs.kolumny() == rhs.kolumny());
 
-	for(int i = 1; i <= lhs.wiersze(); ++i)
-		for(int j = 1; j <= lhs.kolumny(); ++j)
+	for(int i = 1; i <= lhs.kolumny(); ++i)
+		for(int j = 1; j <= lhs.wiersze(); ++j)
 			lhs(i, j) -= rhs(i, j);
+	return lhs;
+}
+
+Matrix operator-(Matrix lhs, const Matrix& rhs)
+{
+	lhs -= rhs;
 	return lhs;
 }
 
 Matrix& operator*=(Matrix& lhs, double x)
 {
-	for(int i = 1; i <= lhs.wiersze(); ++i)
-		for(int j = 1; j <= lhs.kolumny(); ++j)
+	for(int i = 1; i <= lhs.kolumny(); ++i)
+		for(int j = 1; j <= lhs.wiersze(); ++j)
 			lhs(i, j) *= x;
 	return lhs;
 }
@@ -146,15 +154,20 @@ bool jest_kwadratowa(const Matrix& a)
 }
 
 // mno¿enie dwóch macierzy przy za³o¿eniu ¿e prawa jest diagonalna
-Matrix mnozenie_prawa_diagonalna(Matrix x, const Matrix& b)
+void mnozenie_prawa_diagonalna_inplace(Matrix& x, const Matrix& b)
 {
 	assert(jest_kwadratowa(x));
 	assert(jest_diagonalna(b));
 	//  amounts to multiplying the i-th column of A by ai.
 	int n = std::min(b.wiersze(), b.kolumny());
 	for(int i = 1; i <= n; ++i)
-		for(int j = 1; j <= x.wiersze(); ++j)
+		for(int j = 1; j <= n; ++j)
 			x(j, i) *= b(i, i);
+}
+
+Matrix mnozenie_prawa_diagonalna(Matrix x, const Matrix& b)
+{
+	mnozenie_prawa_diagonalna_inplace(x, b);
 	return x;
 }
 
@@ -281,7 +294,7 @@ Matrix rozwiaz_uklad(Matrix a, Matrix y)
 Matrix page_rank(Matrix B, const double d)
 {
 	assert(jest_kwadratowa(B));
-	const int n = 4;
+	const int n = B.wiersze();
 	Matrix A(n, n);
 	Matrix W(n, 1);
 	for(int i = 1; i <= n; ++i)
@@ -311,11 +324,13 @@ Matrix page_rank(Matrix B, const double d)
 	}
 
 	Matrix L = macierz_jednostkowa(n);
-	L -= d*mnozenie_prawa_diagonalna(B, A);
+	mnozenie_prawa_diagonalna_inplace(B, A);
+	B *= d;
+	L -= B;
 	return rozwiaz_uklad(L, W);
 }
 
-void testy(const int op)
+void testy(int op)
 {
 	if(op == 0)
 	{
@@ -459,7 +474,55 @@ void testy(const int op)
 	}
 }
 
+struct GraphReader
+{
+	std::istream& f;
+	bool operator()(std::pair<int, int>& edge)
+	{
+		f >> edge.first;
+		if(f.eof())
+			return false;
+		assert(!f.fail() && !f.bad());
+		f >> edge.second;
+		if(f.eof())
+			return false;
+		assert(!f.fail() && !f.bad());
+		return true;
+	}
+
+	explicit GraphReader(std::istream& i) : f(i) {}
+};
+
+
 int main()
 {
-	testy(6);
+	//testy(6);
+	const char* path = "simple_graph.txt";
+	std::cout << "Przegladanie pliku\n";
+	int max_vertex = -1;
+	{
+		std::ifstream f(path);
+		GraphReader r(f);
+		
+		std::pair<int, int> edge;
+		while(r(edge))
+		{
+			max_vertex = std::max(max_vertex, edge.first);
+			max_vertex = std::max(max_vertex, edge.second);
+		}
+	}
+	std::cout << "Przejrzano plik, wierzcholek o najwiekszym numerze = " << max_vertex << "\n";
+	Matrix m(max_vertex, max_vertex);
+
+	{
+		std::ifstream f(path);
+		GraphReader r(f);
+
+		std::pair<int, int> edge;
+		while(r(edge))
+		{
+			m(edge.second, edge.first) = 1;
+		}
+	}
+	wypisz_macierz(page_rank(m, 0.85));
 }
