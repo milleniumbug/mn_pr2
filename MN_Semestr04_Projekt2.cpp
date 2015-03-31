@@ -101,7 +101,30 @@ std::pair<Matrix, Matrix> dekompozycja_lu(const Matrix& a)
 	return ret;
 }
 
-Matrix rozwiaz_uklad(const Matrix& a, const Matrix& y)
+// "naprawia" macierze ¿eby mo¿na by³o je u¿yæ do obliczania uk³adów równañ razem z dekompozycj¹ LU
+// i obliczaniem uk³adu równañ
+Matrix fix_matrices(Matrix& a, Matrix& y)
+{
+	Matrix pozycje(y.wiersze(), 1);
+	for(int i = 1; i <= y.wiersze(); ++i)
+		pozycje[i] = i;
+
+	for(int i = 1; i <= a.kolumny(); ++i)
+	{
+		int max_row = 1;
+		for(int j = 1; j <= a.wiersze(); ++j)
+		{
+			if(std::abs(a(max_row, i)) <= std::abs(a(j, i)))
+				max_row = j;
+		}
+		swap_rows(a, max_row, i);
+		swap_rows(y, max_row, i);
+		swap_rows(pozycje, max_row, i);
+	}
+	return pozycje;
+}
+
+Matrix rozwiaz_uklad(Matrix a, Matrix y)
 {
 	auto d = dekompozycja_lu(a);
 	Matrix& l = d.first;
@@ -132,7 +155,7 @@ Matrix rozwiaz_uklad(const Matrix& a, const Matrix& y)
 
 int main()
 {
-	const int op = 3;
+	const int op = 4;
 	if(op == 0)
 	{
 		Matrix m(3, 2);
@@ -174,7 +197,7 @@ int main()
 		m(3, 2) = 0;
 		m(3, 3) = 4;
 
-		Matrix y(1, 3);
+		Matrix y(3, 1);
 		y[1] = 10;
 		y[2] = 5;
 		y[3] = -2;
@@ -197,5 +220,28 @@ int main()
 		swap_rows(m, 1, 3);
 		swap_columns(m, 1, 3);
 		wypisz_macierz(m);
+	}
+	else if(op == 4)
+	{
+		Matrix m(3, 3);
+		m(1, 1) = 0;
+		m(1, 2) = 0;
+		m(1, 3) = 2;
+		m(2, 1) = 7;
+		m(2, 2) = 0;
+		m(2, 3) = 0;
+		m(3, 1) = 0;
+		m(3, 2) = 4;
+		m(3, 3) = 0;
+
+		Matrix y(3, 1);
+		y[1] = 10;
+		y[2] = 5;
+		y[3] = -2;
+
+		auto poz = fix_matrices(m, y);
+		wypisz_macierz(m);
+		wypisz_macierz(y);
+		wypisz_macierz(poz);
 	}
 }
