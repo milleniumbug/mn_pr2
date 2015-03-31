@@ -93,13 +93,13 @@ Matrix macierz_jednostkowa(int n)
 	return macierz_skalarna(n, 1);
 }
 
-void swap_columns(Matrix& m, int a, int b)
+void zamien_kolumny(Matrix& m, int a, int b)
 {
 	for(int i = 1; i <= m.wiersze(); ++i)
 		std::swap(m(i, a), m(i, b));
 }
 
-void swap_rows(Matrix& m, int a, int b)
+void zamien_rzedy(Matrix& m, int a, int b)
 {
 	for(int i = 1; i <= m.kolumny(); ++i)
 		std::swap(m(a, i), m(b, i));
@@ -127,7 +127,7 @@ Matrix mnozenie_przez_skalar(Matrix a, double x)
 }
 
 // mno¿enie dwóch macierzy przy za³o¿eniu ¿e prawa jest diagonalna
-Matrix matrix_multiplication_right_diagonal(Matrix x, const Matrix& b)
+Matrix mnozenie_prawa_diagonalna(Matrix x, const Matrix& b)
 {
 	assert(x.kolumny() == b.wiersze());
 	assert(jest_diagonalna(b));
@@ -199,7 +199,7 @@ std::pair<Matrix, Matrix> dekompozycja_lu(const Matrix& a)
 
 // "naprawia" macierze ¿eby mo¿na by³o je u¿yæ do obliczania uk³adów równañ razem z dekompozycj¹ LU
 // i obliczaniem uk³adu równañ
-Matrix fix_matrices(Matrix& a, Matrix& y)
+Matrix napraw_macierze(Matrix& a, Matrix& y)
 {
 	Matrix pozycje(rozmiar(y), 1);
 	for(int i = 1; i <= y.wiersze(); ++i)
@@ -213,9 +213,9 @@ Matrix fix_matrices(Matrix& a, Matrix& y)
 			if(std::abs(a(max_row, i)) <= std::abs(a(j, i)))
 				max_row = j;
 		}
-		swap_rows(a, max_row, i);
-		swap_rows(y, max_row, i);
-		swap_rows(pozycje, max_row, i);
+		zamien_rzedy(a, max_row, i);
+		zamien_rzedy(y, max_row, i);
+		zamien_rzedy(pozycje, max_row, i);
 	}
 	return pozycje;
 }
@@ -225,7 +225,7 @@ Matrix rozwiaz_uklad(Matrix a, Matrix y)
 	assert(a.wiersze() == a.kolumny());
 	assert(a.wiersze() == y.wiersze());
 	assert(y.kolumny() == 1);
-	auto pozycje = fix_matrices(a, y);
+	auto pozycje = napraw_macierze(a, y);
 	auto d = dekompozycja_lu(a);
 	Matrix& l = d.first;
 	Matrix& u = d.second;
@@ -326,8 +326,8 @@ int main()
 		m(3, 2) = 0;
 		m(3, 3) = 4;
 
-		swap_rows(m, 1, 3);
-		swap_columns(m, 1, 3);
+		zamien_rzedy(m, 1, 3);
+		zamien_kolumny(m, 1, 3);
 		wypisz_macierz(m);
 	}
 	else if(op == 4)
@@ -348,7 +348,7 @@ int main()
 		y[2] = 5;
 		y[3] = -2;
 
-		auto poz = fix_matrices(m, y);
+		auto poz = napraw_macierze(m, y);
 		wypisz_macierz(m);
 		wypisz_macierz(y);
 		wypisz_macierz(poz);
