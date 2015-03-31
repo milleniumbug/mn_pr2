@@ -140,10 +140,15 @@ bool jest_diagonalna(const Matrix& m)
 	return true;
 }
 
+bool jest_kwadratowa(const Matrix& a)
+{
+	return a.wiersze() == a.kolumny();
+}
+
 // mno¿enie dwóch macierzy przy za³o¿eniu ¿e prawa jest diagonalna
 Matrix mnozenie_prawa_diagonalna(Matrix x, const Matrix& b)
 {
-	assert(x.kolumny() == b.wiersze());
+	assert(jest_kwadratowa(x));
 	assert(jest_diagonalna(b));
 	//  amounts to multiplying the i-th column of A by ai.
 	int n = std::min(b.wiersze(), b.kolumny());
@@ -167,7 +172,7 @@ void wypisz_macierz(const Matrix& m)
 
 std::pair<Matrix, Matrix> dekompozycja_lu(const Matrix& a)
 {
-	assert(a.wiersze() == a.kolumny());
+	assert(jest_kwadratowa(a));
 	assert([&]()
 	{
 		for(int i = 1; i <= a.wiersze(); ++i)
@@ -236,7 +241,7 @@ Matrix napraw_macierze(Matrix& a, Matrix& y)
 
 Matrix rozwiaz_uklad(Matrix a, Matrix y)
 {
-	assert(a.wiersze() == a.kolumny());
+	assert(jest_kwadratowa(a));
 	assert(a.wiersze() == y.wiersze());
 	assert(y.kolumny() == 1);
 	auto pozycje = napraw_macierze(a, y);
@@ -275,7 +280,7 @@ Matrix rozwiaz_uklad(Matrix a, Matrix y)
 
 Matrix page_rank(Matrix B, const double d)
 {
-	assert(B.wiersze() == B.kolumny());
+	assert(jest_kwadratowa(B));
 	const int n = 4;
 	Matrix A(n, n);
 	Matrix W(n, 1);
