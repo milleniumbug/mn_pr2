@@ -40,6 +40,18 @@ public:
 	int kolumny() const { return width; }
 };
 
+void swap_columns(Matrix& m, int a, int b)
+{
+	for(int i = 1; i <= m.wiersze(); ++i)
+		std::swap(m(i, a), m(i, b));
+}
+
+void swap_rows(Matrix& m, int a, int b)
+{
+	for(int i = 1; i <= m.kolumny(); ++i)
+		std::swap(m(a, i), m(b, i));
+}
+
 void wypisz_macierz(const Matrix& m)
 {
 	for(int i = 1; i <= m.wiersze(); ++i)
@@ -120,7 +132,7 @@ Matrix rozwiaz_uklad(const Matrix& a, const Matrix& y)
 
 int main()
 {
-	const int op = 2;
+	const int op = 3;
 	if(op == 0)
 	{
 		Matrix m(3, 2);
@@ -168,5 +180,22 @@ int main()
 		y[3] = -2;
 
 		auto x = rozwiaz_uklad(m, y);
+	}
+	else if(op == 3)
+	{
+		Matrix m(3, 3);
+		m(1, 1) = 5;
+		m(1, 2) = 3;
+		m(1, 3) = 2;
+		m(2, 1) = 1;
+		m(2, 2) = 2;
+		m(2, 3) = 0;
+		m(3, 1) = 3;
+		m(3, 2) = 0;
+		m(3, 3) = 4;
+
+		swap_rows(m, 1, 3);
+		swap_columns(m, 1, 3);
+		wypisz_macierz(m);
 	}
 }
