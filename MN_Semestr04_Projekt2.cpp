@@ -118,6 +118,14 @@ bool jest_diagonalna(const Matrix& m)
 	return true;
 }
 
+Matrix mnozenie_przez_skalar(Matrix a, double x)
+{
+	for(int i = 1; i <= a.kolumny(); ++i)
+		for(int j = 1; j <= a.wiersze(); ++j)
+			a(i, j) *= x;
+	return a;
+}
+
 // mno¿enie dwóch macierzy przy za³o¿eniu ¿e prawa jest diagonalna
 Matrix matrix_multiplication_right_diagonal(Matrix x, const Matrix& b)
 {
