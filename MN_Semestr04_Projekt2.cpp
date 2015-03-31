@@ -20,6 +20,16 @@ public:
 		return data[(i - 1)*width + (j - 1)];
 	}
 
+	double& operator[](int pos)
+	{
+		return data[(pos-1)];
+	}
+
+	const double& operator[](int pos) const
+	{
+		return data[(pos - 1)];
+	}
+
 	Matrix(int wiersze, int kolumny, double e = 0.0)
 	{
 		width = kolumny;
