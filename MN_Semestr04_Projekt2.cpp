@@ -69,10 +69,31 @@ Matrix& operator-=(Matrix& lhs, const Matrix& rhs)
 	return lhs;
 }
 
-Matrix operator-(Matrix lhs, const Matrix& rhs)
+Matrix& operator*=(Matrix& lhs, double x)
 {
-	lhs -= rhs;
-	return lhs;
+	for(int i = 1; i <= lhs.wiersze(); ++i)
+		for(int j = 1; j <= lhs.kolumny(); ++j)
+			lhs(i, j) *= x;
+}
+
+Matrix operator*(Matrix m, double x)
+{
+	m *= x;
+	return m;
+}
+
+Matrix operator*(double x, Matrix m)
+{
+	m *= x;
+	return m;
+}
+
+Matrix mnozenie_przez_skalar(Matrix a, double x)
+{
+	for(int i = 1; i <= a.kolumny(); ++i)
+		for(int j = 1; j <= a.wiersze(); ++j)
+			a(i, j) *= x;
+	return a;
 }
 
 int rozmiar(const Matrix& m)
@@ -116,14 +137,6 @@ bool jest_diagonalna(const Matrix& m)
 				return false;
 		}
 	return true;
-}
-
-Matrix mnozenie_przez_skalar(Matrix a, double x)
-{
-	for(int i = 1; i <= a.kolumny(); ++i)
-		for(int j = 1; j <= a.wiersze(); ++j)
-			a(i, j) *= x;
-	return a;
 }
 
 // mno¿enie dwóch macierzy przy za³o¿eniu ¿e prawa jest diagonalna
